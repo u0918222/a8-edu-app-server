@@ -22,10 +22,6 @@ void ServerPing::setupConnection()
     Selector.add(listener);
     terminated = false;
 
-    std::cout << "Waiting for client" << std::endl;
-    //listener.accept(client);
-
-    std::cout << "Connected to client" << std::endl;
     // Start checking for packets
     QTimer::singleShot(100, this, SLOT(getPackets()));
 
@@ -163,7 +159,7 @@ void ServerPing::accessDatabase(std::string queryString, sf::TcpSocket& client)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);  //henry's password = Hk040696
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);  //henry's password = Hk040696
 
     if (connection == NULL)
     {
@@ -205,7 +201,7 @@ bool ServerPing::insertIntoDatabase(std::string insertString)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {
@@ -235,7 +231,7 @@ void ServerPing::createAccount(std::string query, sf::TcpSocket& client)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {
@@ -280,7 +276,7 @@ void ServerPing::clearDatabase()
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {
