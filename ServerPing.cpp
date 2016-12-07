@@ -4,8 +4,10 @@ ServerPing::ServerPing(QObject *parent) : QObject(parent)
 {
     // The TCP socket should be non-blocking to keep the GUI from hanging
     //client.setBlocking(false);
-    connectedOnce = false;
-
+    terminated = false;
+    host = "localhost";
+    databaseUser = "admin";
+    databasePassword = "yogapants";
 }
 
 ServerPing::~ServerPing()
@@ -15,12 +17,11 @@ ServerPing::~ServerPing()
 
 void ServerPing::setupConnection()
 {
-    if(!connectedOnce)//first connection
-    {
-        connectedOnce = true;
-        listener.listen(53001);
-        Selector.add(listener);
-    }
+
+    listener.listen(53001);
+    Selector.add(listener);
+    terminated = false;
+
     std::cout << "Waiting for client" << std::endl;
     //listener.accept(client);
 
@@ -33,8 +34,15 @@ void ServerPing::setupConnection()
 void ServerPing::closeConnection()
 {
     std::cout << "Disconnecting " << std::endl;
-    //client.disconnect();
-    listener.listen(53001);
+    for (std::list<sf::TcpSocket*>::iterator it = sockets.begin(); it != sockets.end(); ++it)
+    {
+        sf::TcpSocket& current = **it;
+        current.disconnect();
+    }
+    listener.close();
+    sockets.clear();
+    Selector.clear();
+    terminated = true;
 }
 
 // Accept incoming information from the client.
@@ -67,6 +75,7 @@ void ServerPing::getPackets()
         }
         else
         {
+            std::list<sf::TcpSocket*> socketsToRemove;
             for (std::list<sf::TcpSocket*>::iterator it = sockets.begin(); it != sockets.end(); ++it)
             {
                 sf::TcpSocket& current = **it;
@@ -84,7 +93,8 @@ void ServerPing::getPackets()
                         {
                             std::regex insertKey("(INSERT)(.*)");
                             std::regex selectKey("(SELECT)(.*)");
-                            std::regex connectedKey("(ping)");
+                            std::regex connectedKey("(Ping)");
+                            std::regex terminateKey("TerminateConnection");
                             if(std::regex_match(msg,insertKey))
                             {
                                 std::cout<<"call CreateAccout"<<std::endl;
@@ -100,14 +110,23 @@ void ServerPing::getPackets()
                                 result.push_back("connected");
                                 createAndSentPackets(result,current);
                             }
+                            else if(std::regex_match(msg, terminateKey))
+                            {
+                                current.disconnect();
+                                socketsToRemove.push_back(&current);
+                            }
                         }
                     }
                 }
             }
+
         }
     }
-    // Use a timer to keep checking for packets while keeping the GUI alive
-    QTimer::singleShot(100, this, SLOT(getPackets()));
+    if(!terminated)
+    {
+        // Use a timer to keep checking for packets while keeping the GUI alive
+        QTimer::singleShot(100, this, SLOT(getPackets()));
+    }
 
 
 }
@@ -144,7 +163,7 @@ void ServerPing::accessDatabase(std::string queryString, sf::TcpSocket& client)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,"localhost","root","Hk040696","beegameinfo",3306,0,0);  //henry's password = Hk040696
+    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);  //henry's password = Hk040696
 
     if (connection == NULL)
     {
@@ -176,6 +195,7 @@ void ServerPing::accessDatabase(std::string queryString, sf::TcpSocket& client)
 
     createAndSentPackets(userInfo,client);
 }
+
 bool ServerPing::insertIntoDatabase(std::string insertString)
 {
     MYSQL *connection;
@@ -185,7 +205,7 @@ bool ServerPing::insertIntoDatabase(std::string insertString)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,"localhost","root","Hk040696","beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {
@@ -215,7 +235,7 @@ void ServerPing::createAccount(std::string query, sf::TcpSocket& client)
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,"localhost","root","Hk040696","beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {
@@ -260,7 +280,7 @@ void ServerPing::clearDatabase()
 
     mysql_init(&mysql);
 
-    connection = mysql_real_connect(&mysql,"localhost","root","Hk040696","beegameinfo",3306,0,0);
+    connection = mysql_real_connect(&mysql,host,databaseUser,databasePassword,"beegameinfo",3306,0,0);
 
     if (connection == NULL)
     {

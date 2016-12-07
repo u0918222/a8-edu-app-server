@@ -33,7 +33,7 @@ private:
     sf::TcpListener listener;
     // Talk over a TCP socket
     //sf::TcpSocket client;
-    bool connectedOnce;
+    bool terminated;
 
     void accessDatabase(std::string, sf::TcpSocket&);
     bool insertIntoDatabase(std::string);
@@ -42,6 +42,10 @@ private:
     void printDatabaseResult(std::vector<std::string>);     //takes in the vector of strings returned from query into the database and prints them
     void createAccount(std::string, sf::TcpSocket&);  //create an account returns a string incase there is an error then the error message is displayed
     void createAndSentPackets(std::vector<std::string> data, sf::TcpSocket&);
+
+    std::string databaseUser;
+    std::string databasePassword;
+    std::string host;
 
 };
 
