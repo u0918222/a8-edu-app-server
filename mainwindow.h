@@ -10,6 +10,7 @@
 #include <thread>
 #include <QThread>
 #include <ServerPing.h>
+#include <ChangeUserForDatabase.h>
 
 namespace Ui {
 class MainWindow;
@@ -28,17 +29,25 @@ signals:
     void setupConnection();
     void closeConnection();
     void clearDatabase();
+    void sendDatabaseInfo(std::string, std::string);
+
+public slots:
+    void acceptDatabaseInfo(std::string,std::string);
+
 private slots:
 
-    void on_pushButton_clicked();
-
     void on_clearDatabaseButton_clicked();
+
+    void on_setupConnectionButton_clicked();
+
+    void on_changeUserAndPassword_clicked();
 
 private:
     ServerPing pingObject;
     Ui::MainWindow *ui;
     // Open a listener on a port
     sf::TcpListener listener;
+    ChangeUserForDatabase databaseInfo;
 
     bool connected;
 

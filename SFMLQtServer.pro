@@ -14,12 +14,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    ServerPing.cpp
+    ServerPing.cpp \
+    ChangeUserForDatabase.cpp
 
 HEADERS  += mainwindow.h \
-    ServerPing.h
+    ServerPing.h \
+    ChangeUserForDatabase.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    ChangeUserForDatabase.ui
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/SFML-2.4.1-windows-vc14-32-bit/SFML-2.4.1/lib/ -lsfml-graphics -lsfml-main -lsfml-network -lsfml-window -lsfml-system -lsfml-audio
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/SFML-2.4.1-windows-vc14-32-bit/SFML-2.4.1/lib/ -lsfml-graphics-d -lsfml-main-d -lsfml-network-d -lsfml-window-d -lsfml-system-d -lsfml-audio-d

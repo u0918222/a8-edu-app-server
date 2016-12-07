@@ -15,6 +15,9 @@ class ServerPing : public QObject
 public:
     explicit ServerPing(QObject *parent = 0);
     ~ServerPing();
+    std::string databaseUser;
+    std::string databasePassword;
+    std::string host;
 
 signals:
 
@@ -42,10 +45,6 @@ private:
     void printDatabaseResult(std::vector<std::string>);     //takes in the vector of strings returned from query into the database and prints them
     void createAccount(std::string, sf::TcpSocket&);  //create an account returns a string incase there is an error then the error message is displayed
     void createAndSentPackets(std::vector<std::string> data, sf::TcpSocket&);
-
-    std::string databaseUser;
-    std::string databasePassword;
-    std::string host;
 
 };
 

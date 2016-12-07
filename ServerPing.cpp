@@ -12,12 +12,18 @@ ServerPing::ServerPing(QObject *parent) : QObject(parent)
 
 ServerPing::~ServerPing()
 {
-    //client.disconnect();
+    for (std::list<sf::TcpSocket*>::iterator it = sockets.begin(); it != sockets.end(); ++it)
+    {
+        sf::TcpSocket& current = **it;
+        current.disconnect();
+    }
+    listener.close();
+    sockets.clear();
+    Selector.clear();
 }
 
 void ServerPing::setupConnection()
 {
-
     listener.listen(53001);
     Selector.add(listener);
     terminated = false;
