@@ -96,8 +96,11 @@ void ServerPing::getPackets()
                         {
                             std::regex insertKey("(INSERT)(.*)");
                             std::regex selectKey("(SELECT)(.*)");
+                            std::regex deleteKey("(DELETE)(.*)");
+                            std::regex updateKey("(UPDATE)(.*)");
                             std::regex connectedKey("(Ping)");
                             std::regex terminateKey("TerminateConnection");
+
                             if(std::regex_match(msg,insertKey))
                             {
                                 std::cout<<"call CreateAccout"<<std::endl;
@@ -106,6 +109,14 @@ void ServerPing::getPackets()
                             else if(std::regex_match(msg,selectKey))
                             {
                                 accessDatabase(msg,current);
+                            }
+                            else if(std::regex_match(msg, deleteKey))
+                            {
+                                deleteAnEntry(msg,current);
+                            }
+                            else if(std::regex_match(msg, updateKey))
+                            {
+                                updateAnEntry(msg, current);
                             }
                             else if(std::regex_match(msg,connectedKey))
                             {
@@ -300,3 +311,69 @@ void ServerPing::clearDatabase()
 
     mysql_close(connection);
 }
+
+void ServerPing::deleteAnEntry(std::string deleteString, sf::TcpSocket & current)
+{
+    MYSQL *connection;
+    MYSQL mysql;
+
+    int state;
+    std::string deleteReport = "deleted";
+    std::vector<std::string> result;
+
+    mysql_init(&mysql);
+
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+    if (connection == NULL)
+    {
+        std::cout << mysql_error(&mysql) << std::endl;
+        deleteReport = mysql_error(&mysql);
+
+    }
+
+    state = mysql_query(connection, deleteString.c_str());
+    if (state !=0)
+    {
+        std::cout << mysql_error(connection) << std::endl;
+        deleteReport = mysql_error(connection);
+    }
+
+    mysql_close(connection);
+
+    result.push_back(deleteReport);
+    createAndSentPackets(result, current);
+}
+
+void ServerPing::updateAnEntry(std::string updateString, sf::TcpSocket& current)
+{
+    std::string updateReport = "updated";
+    std::vector<std::string> result;
+
+    MYSQL *connection;
+    MYSQL mysql;
+
+    int state;
+
+    mysql_init(&mysql);
+
+    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+    if (connection == NULL)
+    {
+        std::cout << mysql_error(&mysql) << std::endl;
+        updateReport = mysql_error(&mysql);
+    }
+
+    state = mysql_query(connection, updateString.c_str());
+    if (state !=0)
+    {
+        std::cout << mysql_error(connection) << std::endl;
+        updateReport = mysql_error(connection);
+    }
+    mysql_close(connection);
+
+    result.push_back(updateReport);
+    createAndSentPackets(result, current);
+}
+

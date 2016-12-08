@@ -45,6 +45,8 @@ private:
     void printDatabaseResult(std::vector<std::string>);     //takes in the vector of strings returned from query into the database and prints them
     void createAccount(std::string, sf::TcpSocket&);  //create an account returns a string incase there is an error then the error message is displayed
     void createAndSentPackets(std::vector<std::string> data, sf::TcpSocket&);
+    void deleteAnEntry(std::string, sf::TcpSocket&); // remove a entry from gamedata table in beegameinfo database
+    void updateAnEntry(std::string, sf::TcpSocket&); // update information in an entry in the gamedata table under beegameinfo database
 
 };
 
