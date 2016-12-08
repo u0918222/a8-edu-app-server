@@ -6,3 +6,11 @@
 "debug/" 
 "ui_ChangeUserForDatabase.h" 
 "ui_mainwindow.h" 
+Makefile
+Makefile.Debug
+Makefile.Release
+SFMLQtServer.pro.user
+SFMLQtServer.pro.user.de91ed5
+debug/
+ui_ChangeUserForDatabase.h
+ui_mainwindow.h
