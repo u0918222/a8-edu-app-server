@@ -167,6 +167,7 @@ void ServerPing::printDatabaseResult(std::vector<std::string> result)
 //Provided by the professor to learn to use c++ and MySQL together.
 void ServerPing::accessDatabase(std::string queryString, sf::TcpSocket& client)
 {
+    std::regex checkUser(".*WHERE username\\s*=\\s*'[a-zA-Z]+[a-zA-Z0-9]*'\\s*(AND.*)?");
     std::vector<std::string> userInfo;
     MYSQL_RES *result;
     MYSQL_ROW row;
@@ -175,105 +176,129 @@ void ServerPing::accessDatabase(std::string queryString, sf::TcpSocket& client)
 
     int state;
 
-    mysql_init(&mysql);
-
-    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);  //henry's password = Hk040696
-
-    if (connection == NULL)
+    if(!std::regex_match(queryString,checkUser))
     {
-        std::cout << mysql_error(&mysql) << std::endl;
-
-        createAndSentPackets(userInfo, client);
+        createAndSentPackets(userInfo,client);
     }
-
-    state = mysql_query(connection, queryString.c_str());
-    if (state !=0)
+    else
     {
-        std::cout << mysql_error(connection) << std::endl;
-        createAndSentPackets(userInfo, client);
-    }
+        mysql_init(&mysql);
 
-    result = mysql_store_result(connection);
+        connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);  //henry's password = Hk040696
 
-    while ( ( row=mysql_fetch_row(result)) != NULL )
-    {
-        for(unsigned int i = 0; i < mysql_num_fields(result); i++)
+        if (connection == NULL)
         {
-            userInfo.push_back(row[i]);
+            std::cout << mysql_error(&mysql) << std::endl;
+
+            createAndSentPackets(userInfo, client);
         }
+
+        state = mysql_query(connection, queryString.c_str());
+        if (state !=0)
+        {
+            std::cout << mysql_error(connection) << std::endl;
+            createAndSentPackets(userInfo, client);
+        }
+
+        result = mysql_store_result(connection);
+
+        while ( ( row=mysql_fetch_row(result)) != NULL )
+        {
+            for(unsigned int i = 0; i < mysql_num_fields(result); i++)
+            {
+                userInfo.push_back(row[i]);
+            }
+        }
+
+        mysql_free_result(result);
+
+        mysql_close(connection);
+
+        createAndSentPackets(userInfo,client);
     }
-
-    mysql_free_result(result);
-
-    mysql_close(connection);
-
-    createAndSentPackets(userInfo,client);
 }
 
 bool ServerPing::insertIntoDatabase(std::string insertString)
 {
+    std::regex checkUser(".*WHERE username\\s*=\\s*'[a-zA-Z]+[a-zA-Z0-9]*'\\s*(AND.*)?");
     MYSQL *connection;
     MYSQL mysql;
 
     int state;
-
-    mysql_init(&mysql);
-
-    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
-
-    if (connection == NULL)
+    if(!std::regex_match(insertString, checkUser))
     {
-        std::cout << mysql_error(&mysql) << std::endl;
         return false;
     }
-
-    state = mysql_query(connection, insertString.c_str());
-    if (state !=0)
+    else
     {
-        std::cout << mysql_error(connection) << std::endl;
-        return false;
+        mysql_init(&mysql);
+
+        connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+        if (connection == NULL)
+        {
+            std::cout << mysql_error(&mysql) << std::endl;
+            return false;
+        }
+
+        state = mysql_query(connection, insertString.c_str());
+        if (state !=0)
+        {
+            std::cout << mysql_error(connection) << std::endl;
+            return false;
+        }
+
+        mysql_close(connection);
+
+        return true;
     }
-
-    mysql_close(connection);
-
-    return true;
 }
 void ServerPing::createAccount(std::string query, sf::TcpSocket& client)
 {
+    std::regex checkUser(".*NULL,\\s*'[a-zA-Z]+[a-zA-Z0-9]*'\\s*,.*");
     std::vector<std::string> result;
     MYSQL *connection;
     MYSQL mysql;
 
     int state;
+
     std::string errorReport = "OK";
-
-    mysql_init(&mysql);
-
-    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
-
-    if (connection == NULL)
+    if(!std::regex_match(query, checkUser))
     {
-        std::cout << mysql_error(&mysql) << std::endl;
-        errorReport = mysql_error(&mysql);
+        errorReport = "You put in an invalid character to your username.";
+        result.push_back(errorReport);
+        createAndSentPackets(result, client);
+    }
+    else
+    {
+        mysql_init(&mysql);
+
+        connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+        if (connection == NULL)
+        {
+            std::cout << mysql_error(&mysql) << std::endl;
+            errorReport = mysql_error(&mysql);
+
+            result.push_back(errorReport);
+            createAndSentPackets(result, client);
+        }
+        std::string insertString = query;
+        state = mysql_query(connection, insertString.c_str());
+        if (state !=0)
+        {
+            std::cout << mysql_error(connection) << std::endl;
+            errorReport = mysql_error(connection);
+
+            result.push_back(errorReport);
+            createAndSentPackets(result, client);
+        }
+
+        mysql_close(connection);
 
         result.push_back(errorReport);
         createAndSentPackets(result, client);
     }
-    std::string insertString = query;
-    state = mysql_query(connection, insertString.c_str());
-    if (state !=0)
-    {
-        std::cout << mysql_error(connection) << std::endl;
-        errorReport = mysql_error(connection);
-
-        result.push_back(errorReport);
-        createAndSentPackets(result, client);
-    }
-
-    mysql_close(connection);
-
-    result.push_back(errorReport);
-    createAndSentPackets(result, client);
 }
 
 void ServerPing::stringToUpper(std::string &inputString)
@@ -314,6 +339,7 @@ void ServerPing::clearDatabase()
 
 void ServerPing::deleteAnEntry(std::string deleteString, sf::TcpSocket & current)
 {
+    std::regex checkUser(".*WHERE username\\s*=\\s*'[a-zA-Z]+[a-zA-Z0-9]*'\\s*(AND.*)?");
     MYSQL *connection;
     MYSQL mysql;
 
@@ -321,32 +347,42 @@ void ServerPing::deleteAnEntry(std::string deleteString, sf::TcpSocket & current
     std::string deleteReport = "deleted";
     std::vector<std::string> result;
 
-    mysql_init(&mysql);
-
-    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
-
-    if (connection == NULL)
+    if(!std::regex_match(deleteString,checkUser))
     {
-        std::cout << mysql_error(&mysql) << std::endl;
-        deleteReport = mysql_error(&mysql);
-
+        deleteReport = "You messed up your username string with some special character.";
+        result.push_back(deleteReport);
+        createAndSentPackets(result, current);
     }
-
-    state = mysql_query(connection, deleteString.c_str());
-    if (state !=0)
+    else
     {
-        std::cout << mysql_error(connection) << std::endl;
-        deleteReport = mysql_error(connection);
+        mysql_init(&mysql);
+
+        connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+        if (connection == NULL)
+        {
+            std::cout << mysql_error(&mysql) << std::endl;
+            deleteReport = mysql_error(&mysql);
+
+        }
+
+        state = mysql_query(connection, deleteString.c_str());
+        if (state !=0)
+        {
+            std::cout << mysql_error(connection) << std::endl;
+            deleteReport = mysql_error(connection);
+        }
+
+        mysql_close(connection);
+
+        result.push_back(deleteReport);
+        createAndSentPackets(result, current);
     }
-
-    mysql_close(connection);
-
-    result.push_back(deleteReport);
-    createAndSentPackets(result, current);
 }
 
 void ServerPing::updateAnEntry(std::string updateString, sf::TcpSocket& current)
 {
+    std::regex checkUser(".*WHERE username\\s*=\\s*'[a-zA-Z]+[a-zA-Z0-9]*'\\s*(AND.*)?");
     std::string updateReport = "updated";
     std::vector<std::string> result;
 
@@ -354,26 +390,35 @@ void ServerPing::updateAnEntry(std::string updateString, sf::TcpSocket& current)
     MYSQL mysql;
 
     int state;
-
-    mysql_init(&mysql);
-
-    connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
-
-    if (connection == NULL)
+    if(!std::regex_match(updateString, checkUser))
     {
-        std::cout << mysql_error(&mysql) << std::endl;
-        updateReport = mysql_error(&mysql);
+        updateReport = "You entered your username with an invalid character.";
+        result.push_back(updateReport);
+        createAndSentPackets(result, current);
+    }
+    else
+    {
+        mysql_init(&mysql);
+
+        connection = mysql_real_connect(&mysql,host.c_str(),databaseUser.c_str(),databasePassword.c_str(),"beegameinfo",3306,0,0);
+
+        if (connection == NULL)
+        {
+            std::cout << mysql_error(&mysql) << std::endl;
+            updateReport = mysql_error(&mysql);
+        }
+
+        state = mysql_query(connection, updateString.c_str());
+        if (state !=0)
+        {
+            std::cout << mysql_error(connection) << std::endl;
+            updateReport = mysql_error(connection);
+        }
+        mysql_close(connection);
+
+        result.push_back(updateReport);
+        createAndSentPackets(result, current);
     }
 
-    state = mysql_query(connection, updateString.c_str());
-    if (state !=0)
-    {
-        std::cout << mysql_error(connection) << std::endl;
-        updateReport = mysql_error(connection);
-    }
-    mysql_close(connection);
-
-    result.push_back(updateReport);
-    createAndSentPackets(result, current);
 }
 
